@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "Expedition": {
+      "title": "Expedition",
+      "description": "High-altitude expedition mission data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "planned", "completed"] },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" }
+      },
+      "required": ["id", "name", "status", "lat", "lng"]
+    },
+    "Member": {
+      "title": "Expedition Member",
+      "description": "Real-time telemetry for expedition personnel",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "alt": { "type": "number" },
+        "hr": { "type": "number" },
+        "speed": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "resting", "stationary", "emergency"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "lat", "lng", "alt", "status"]
+    },
+    "Alert": {
+      "title": "Emergency Alert",
+      "description": "Critical distress signals",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "alt": { "type": "number" },
+        "type": { "type": "string", "enum": ["HELI_EVAC", "MEDICAL", "LOGISTICS"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "lat", "lng", "type", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/expeditions": {
+      "schema": "Expedition",
+      "description": "Top-level expeditions"
+    },
+    "/expeditions/{expeditionId}/members": {
+      "schema": "Member",
+      "description": "Real-time tracking for members within an expedition"
+    },
+    "/expeditions/{expeditionId}/alerts": {
+      "schema": "Alert",
+      "description": "Distress signals for an expedition"
+    }
+  }
+}
