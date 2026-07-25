@@ -61,7 +61,14 @@ const EXPEDITIONS: Expedition[] = [
       { category: 'Contingency Fund', amount: '$300' },
     ],
     total: '$3,000',
-    mapOffset: { x: '80%', y: '30%' }
+    mapOffset: { x: '80%', y: '30%' },
+    path: [
+      { lat: 35.8813, lng: 76.5133 }, // Base Camp
+      { lat: 35.8850, lng: 76.5180 }, // Camp 1
+      { lat: 35.8900, lng: 76.5250 }, // Camp 2
+      { lat: 35.8950, lng: 76.5350 }, // Camp 3
+      { lat: 35.9000, lng: 76.5450 }  // Camp 4
+    ]
   },
   {
     id: 'nanga',
@@ -98,7 +105,13 @@ const EXPEDITIONS: Expedition[] = [
       { category: 'Contingency Fund', amount: '$150' },
     ],
     total: '$1,600',
-    mapOffset: { x: '40%', y: '60%' }
+    mapOffset: { x: '40%', y: '60%' },
+    path: [
+      { lat: 35.2375, lng: 74.5891 }, // Base Camp
+      { lat: 35.2320, lng: 74.5850 }, // Camp 1
+      { lat: 35.2280, lng: 74.5800 }, // Camp 2
+      { lat: 35.2250, lng: 74.5750 }  // Camp 3
+    ]
   },
   {
     id: 'broad',
@@ -135,7 +148,12 @@ const EXPEDITIONS: Expedition[] = [
       { category: 'Contingency Fund', amount: '$300' },
     ],
     total: '$2,800',
-    mapOffset: { x: '75%', y: '35%' }
+    mapOffset: { x: '75%', y: '35%' },
+    path: [
+      { lat: 35.8050, lng: 76.5683 }, // Base Camp
+      { lat: 35.8100, lng: 76.5750 }, // Camp 1
+      { lat: 35.8150, lng: 76.5850 }  // Camp 2
+    ]
   },
 ];
 
@@ -260,7 +278,12 @@ export default function ExpeditionDashboard() {
                         <span>SRC: SENTINEL-2B</span>
                       </div>
                     </div>
-                    <ExpeditionMap expeditionId={activeExp.id} lat={activeExp.lat} lng={activeExp.lng} />
+                    <ExpeditionMap 
+                      expeditionId={activeExp.id} 
+                      lat={activeExp.lat} 
+                      lng={activeExp.lng} 
+                      path={activeExp.path}
+                    />
                   </div>
 
                   {/* Tracking & Logistics Grid */}

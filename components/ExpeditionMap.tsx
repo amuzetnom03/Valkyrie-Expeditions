@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
-import { Cloud, Wind, Thermometer, MapPin, User } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
+import { Cloud, Wind, Thermometer, MapPin, User, Navigation } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getDb } from '@/lib/firebase';
 import { collection, onSnapshot, query } from 'firebase/firestore';
@@ -11,13 +11,74 @@ import type { Member } from './TrackingPanel';
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_PLATFORM_KEY || '';
 const hasValidKey = Boolean(API_KEY);
 
-interface WeatherOverlayProps {
+interface ExpeditionMapProps {
   expeditionId: string;
   lat: number;
   lng: number;
+  path?: { lat: number; lng: number }[];
 }
 
-export default function ExpeditionMap({ expeditionId, lat, lng }: WeatherOverlayProps) {
+function RoutePolyline({ path }: { path: { lat: number; lng: number }[] }) {
+  const map = useMap();
+  const polylineRef = useRef<google.maps.Polyline | null>(null);
+
+  useEffect(() => {
+    if (!map || !path || path.length < 2) return;
+
+    // Create the polyline
+    const polyline = new google.maps.Polyline({
+      path: [],
+      geodesic: true,
+      strokeColor: '#f97316', // orange-500
+      strokeOpacity: 0.8,
+      strokeWeight: 4,
+      map: map,
+    });
+
+    polylineRef.current = polyline;
+
+    // Animation logic - draw the path segment by segment
+    let count = 0;
+    const speed = 0.05; // Animation speed
+    
+    const animate = () => {
+      if (count > path.length) return;
+      
+      const currentPath = path.slice(0, Math.ceil(count));
+      
+      // Interpolate the last point for smooth drawing
+      if (count % 1 !== 0 && count < path.length) {
+        const start = path[Math.floor(count)];
+        const end = path[Math.ceil(count)];
+        if (start && end) {
+          const ratio = count % 1;
+          const interpolated = {
+            lat: start.lat + (end.lat - start.lat) * ratio,
+            lng: start.lng + (end.lng - start.lng) * ratio
+          };
+          currentPath.push(interpolated);
+        }
+      }
+      
+      polyline.setPath(currentPath);
+      
+      count += speed;
+      if (count <= path.length) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    animate();
+
+    return () => {
+      polyline.setMap(null);
+    };
+  }, [map, path]);
+
+  return null;
+}
+
+export default function ExpeditionMap({ expeditionId, lat, lng, path }: ExpeditionMapProps) {
   const [layers, setLayers] = useState({
     temp: true,
     wind: false,
@@ -70,6 +131,8 @@ export default function ExpeditionMap({ expeditionId, lat, lng }: WeatherOverlay
           disableDefaultUI={true}
           style={{ width: '100%', height: '100%' }}
         >
+          {path && path.length > 0 && <RoutePolyline path={path} />}
+          
           {/* Base Camp Marker */}
           <AdvancedMarker position={{ lat, lng }}>
             <Pin background="#f97316" glyphColor="#fff" borderColor="#c2410c" scale={1.2}>

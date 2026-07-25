@@ -30,6 +30,7 @@ export interface Expedition {
   financials: { category: string; amount: string }[];
   total: string;
   mapOffset?: { x: string; y: string };
+  path?: { lat: number; lng: number }[];
 }
 
 export interface TravelerInfo {
