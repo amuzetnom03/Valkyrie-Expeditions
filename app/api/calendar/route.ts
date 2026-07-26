@@ -1,6 +1,8 @@
 import { google } from 'googleapis';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const runtime = 'nodejs'; // googleapis needs nodejs
+
 export async function POST(req: NextRequest) {
   const token = req.headers.get('Authorization')?.split('Bearer ')[1];
   if (!token) {

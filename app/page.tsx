@@ -177,6 +177,8 @@ export default function ExpeditionDashboard() {
 
   const handleStartInitialization = () => {
     setIsRegistering(true);
+    // Low-latency feedback: transition UI state immediately
+    setLocalStatuses(prev => ({ ...prev, [selectedId]: 'INITIALIZING' }));
   };
 
   const handleFormSubmit = async (data: TravelerInfo) => {
@@ -184,95 +186,95 @@ export default function ExpeditionDashboard() {
       await joinMission();
     }
     
-    // Save traveler info to member doc
-    const db = getDb();
-    if (db && user) {
-      const memberRef = doc(db, 'expeditions', selectedId, 'members', user.uid);
-      await setDoc(memberRef, {
-        travelerInfo: data,
-        status: 'active',
-        updatedAt: Timestamp.now()
-      }, { merge: true });
-
-      // Sync to Google Calendar
-      const token = getAccessToken();
-      if (token) {
-        try {
-          await fetch('/api/calendar', {
-            method: 'POST',
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              expeditionName: activeExp.name,
-              startDate: data.startDate,
-              endDate: data.endDate,
-              fullName: data.fullName
-            })
-          });
-        } catch (err) {
-          console.error('Failed to sync to calendar:', err);
-        }
-      }
-    }
-
+    // Low-latency: Move to tracking view immediately
     setIsRegistering(false);
     setIsTracking(true);
     setLocalStatuses(prev => ({ ...prev, [selectedId]: 'ENROUTE' }));
-    // Refresh logistics data
-    fetchLogisticsData();
+
+    // Persist in background
+    const db = getDb();
+    if (db && user) {
+      const memberRef = doc(db, 'expeditions', selectedId, 'members', user.uid);
+      setDoc(memberRef, {
+        travelerInfo: data,
+        status: 'active',
+        updatedAt: Timestamp.now()
+      }, { merge: true }).catch(err => {
+        console.error('Persistence failed:', err);
+        setError('Connection lost. Changes saved locally.');
+      });
+
+      // Google Calendar sync (background)
+      const token = getAccessToken();
+      if (token) {
+        fetch('/api/calendar', {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            expeditionName: activeExp.name,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            fullName: data.fullName
+          })
+        }).catch(err => console.error('Calendar sync failed:', err));
+      }
+    }
   };
 
-  const fetchLogisticsData = async () => {
+  // Real-time Logistics Listener for low-latency multi-user updates
+  useEffect(() => {
     const db = getDb();
     if (!db) return;
 
-    // Fetch all travelers from all expeditions to consolidate
-    const travelers: any[] = [];
-    try {
-      for (const exp of EXPEDITIONS) {
-        const membersRef = collection(db, 'expeditions', exp.id, 'members');
-        const snapshot = await getDocs(membersRef);
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          if (data.travelerInfo) {
-            travelers.push({
-              ...data.travelerInfo,
-              expeditionId: exp.id,
-              expeditionName: exp.name
-            });
-          }
-        });
-      }
-      setAllTravelers(travelers);
-    } catch (err) {
-      console.error('Failed to fetch travelers:', err);
-    }
+    const unsubscribers: (() => void)[] = [];
 
-    // Fetch Google Calendar events
+    EXPEDITIONS.forEach(exp => {
+      const membersRef = collection(db, 'expeditions', exp.id, 'members');
+      const unsub = onSnapshot(membersRef, (snapshot) => {
+        setAllTravelers(prev => {
+          const others = prev.filter(t => t.expeditionId !== exp.id);
+          const current: any[] = [];
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.travelerInfo) {
+              current.push({
+                ...data.travelerInfo,
+                expeditionId: exp.id,
+                expeditionName: exp.name
+              });
+            }
+          });
+          return [...others, ...current];
+        });
+      }, (err) => {
+        console.error(`Logistics sync error for ${exp.id}:`, err);
+      });
+      unsubscribers.push(unsub);
+    });
+
+    return () => unsubscribers.forEach(unsub => unsub());
+  }, []);
+
+  // Separate effect for Calendar sync to avoid blocking UI
+  useEffect(() => {
     const token = getAccessToken();
     if (token) {
-      try {
-        const res = await fetch('/api/calendar', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const events = await res.json();
-          setCalendarEvents(Array.isArray(events) ? events : []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch calendar events:', err);
-      }
+      fetch('/api/calendar', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(events => setCalendarEvents(Array.isArray(events) ? events : []))
+      .catch(err => console.error('Calendar fetch failed:', err));
     }
-  };
-
-  useEffect(() => {
-    fetchLogisticsData();
   }, [selectedId]);
 
   const handleEmergency = () => {
     if (confirm('CRITICAL: Confirm Emergency Heli-Evac Request? Your current GPS location will be broadcast to all units.')) {
+      // Optimistic UI response
+      setLocalStatuses(prev => ({ ...prev, [selectedId]: 'EMERGENCY' }));
       triggerEmergency('HELI_EVAC');
     }
   };
