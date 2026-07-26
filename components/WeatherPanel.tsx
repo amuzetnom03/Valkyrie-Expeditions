@@ -19,19 +19,19 @@ const MOCK_FORECAST: ForecastDay[] = [
 
 export default function WeatherPanel() {
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden h-full flex flex-col">
-      <div className="p-6 border-b border-slate-800">
+    <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+      <div className="p-4 md:p-6 border-b border-slate-800">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <Cloud size={18} className="text-blue-400" />
-            <h3 className="font-bold text-lg uppercase tracking-tight">Meteorological Data</h3>
+            <h3 className="font-bold text-base md:text-lg uppercase tracking-tight">Meteorological Data</h3>
           </div>
-          <span className="text-[10px] font-mono text-slate-500">REF: SKARDU_STATION_04</span>
+          <span className="hidden sm:inline text-[10px] font-mono text-slate-500">REF: SKARDU_STATION_04</span>
         </div>
         <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">5-Day Strategic Forecast</p>
       </div>
 
-      <div className="flex-1 p-6 flex flex-col justify-between gap-6">
+      <div className="p-4 md:p-6 space-y-6">
         <div className="grid grid-cols-5 gap-2">
           {MOCK_FORECAST.map((d, i) => (
             <div key={i} className="flex flex-col items-center gap-2 p-2 rounded bg-black/30 border border-slate-800/50">

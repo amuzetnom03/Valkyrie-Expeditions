@@ -110,15 +110,15 @@ export default function TrackingPanel({ expeditionId, onEmergency }: TrackingPan
   }, [members, expeditionId]);
 
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden min-h-[400px]">
-      <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+    <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="p-4 md:p-6 border-b border-slate-800 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Activity size={18} className="text-orange-500" />
-          <h3 className="font-bold text-lg uppercase tracking-tight">Personnel Telemetry</h3>
+          <h3 className="font-bold text-base md:text-lg uppercase tracking-tight">Personnel Telemetry</h3>
         </div>
         <div className="flex items-center gap-2">
           {loading && <div className="w-2 h-2 rounded-full bg-slate-600 animate-pulse" />}
-          <div className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded font-mono text-[10px] border border-emerald-500/20">
+          <div className="hidden sm:block px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded font-mono text-[10px] border border-emerald-500/20">
             LIVE FEED
           </div>
         </div>

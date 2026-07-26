@@ -2,8 +2,11 @@
 
 import { useForm } from 'react-hook-form';
 import { motion } from 'motion/react';
-import { Shield, User, Phone, Droplets, HeartPulse, FileText, CheckCircle2, ChevronLeft } from 'lucide-react';
+import { Shield, User, Phone, Droplets, HeartPulse, FileText, CheckCircle2, ChevronLeft, Calendar as CalendarIcon } from 'lucide-react';
 import { TravelerInfo } from '@/types/expedition';
+import { useState, useEffect } from 'react';
+import { googleSignIn, initAuth } from '@/lib/google-auth';
+import { User as FirebaseUser } from 'firebase/auth';
 
 interface MissionFormProps {
   onCancel: () => void;
@@ -12,11 +15,51 @@ interface MissionFormProps {
 }
 
 export default function MissionForm({ onCancel, onSubmit, expeditionName }: MissionFormProps) {
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [needsAuth, setNeedsAuth] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = initAuth(
+      (user) => {
+        setUser(user);
+        setNeedsAuth(false);
+      },
+      () => {
+        setNeedsAuth(true);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
   const { register, handleSubmit, formState: { errors } } = useForm<TravelerInfo>({
     defaultValues: {
       gearCheck: false,
     }
   });
+
+  const handleAuth = async () => {
+    setIsLoggingIn(true);
+    try {
+      const result = await googleSignIn();
+      if (result) {
+        setUser(result.user);
+        setNeedsAuth(false);
+      }
+    } catch (err) {
+      console.error('Auth failed:', err);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const onFormSubmit = (data: TravelerInfo) => {
+    if (needsAuth) {
+      handleAuth();
+      return;
+    }
+    onSubmit(data);
+  };
 
   return (
     <motion.div 
@@ -39,7 +82,7 @@ export default function MissionForm({ onCancel, onSubmit, expeditionName }: Miss
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Personnel Details */}
           <section className="space-y-4">
@@ -63,6 +106,38 @@ export default function MissionForm({ onCancel, onSubmit, expeditionName }: Miss
                 className="w-full bg-black/40 border border-slate-800 rounded-lg p-3 text-sm focus:border-orange-500 focus:outline-none transition-colors"
                 placeholder="A12345678"
               />
+            </div>
+          </section>
+
+          {/* Mission Timing & Calendar */}
+          <section className="space-y-4">
+            <h3 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <CalendarIcon size={12} /> Mission Schedule
+            </h3>
+            
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-1">
+                <label className="text-[10px] font-mono text-slate-400 uppercase ml-1">Start Date</label>
+                <input 
+                  type="date"
+                  {...register('startDate', { required: true })}
+                  className="w-full bg-black/40 border border-slate-800 rounded-lg p-3 text-sm focus:border-orange-500 focus:outline-none transition-colors"
+                />
+              </div>
+              <div className="flex-1 space-y-1">
+                <label className="text-[10px] font-mono text-slate-400 uppercase ml-1">End Date</label>
+                <input 
+                  type="date"
+                  {...register('endDate', { required: true })}
+                  className="w-full bg-black/40 border border-slate-800 rounded-lg p-3 text-sm focus:border-orange-500 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <p className="text-[10px] text-blue-400 leading-tight">
+                Dates will be synced to your Google Calendar to facilitate logistical coordination and vehicle allocation.
+              </p>
             </div>
           </section>
 
@@ -134,13 +209,25 @@ export default function MissionForm({ onCancel, onSubmit, expeditionName }: Miss
           </label>
         </div>
 
-        <button 
-          type="submit"
-          className="w-full py-6 bg-orange-600 hover:bg-orange-500 text-white font-black uppercase tracking-[5px] rounded-xl shadow-[0_0_30px_rgba(234,88,12,0.3)] transition-all active:scale-95 flex items-center justify-center gap-3"
-        >
-          <CheckCircle2 size={24} />
-          EXECUTE MISSION PROTOCOL
-        </button>
+        {needsAuth ? (
+          <button 
+            type="button"
+            onClick={handleAuth}
+            disabled={isLoggingIn}
+            className="w-full py-6 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-[5px] rounded-xl shadow-[0_0_30px_rgba(37,99,235,0.3)] transition-all active:scale-95 flex items-center justify-center gap-3"
+          >
+            <CalendarIcon size={24} />
+            {isLoggingIn ? 'CONNECTING...' : 'CONNECT GOOGLE CALENDAR'}
+          </button>
+        ) : (
+          <button 
+            type="submit"
+            className="w-full py-6 bg-orange-600 hover:bg-orange-500 text-white font-black uppercase tracking-[5px] rounded-xl shadow-[0_0_30px_rgba(234,88,12,0.3)] transition-all active:scale-95 flex items-center justify-center gap-3"
+          >
+            <CheckCircle2 size={24} />
+            EXECUTE MISSION PROTOCOL
+          </button>
+        )}
       </form>
     </motion.div>
   );

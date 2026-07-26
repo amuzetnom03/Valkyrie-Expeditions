@@ -41,6 +41,8 @@ export interface TravelerInfo {
   medicalConditions: string;
   gearCheck: boolean;
   insurancePolicy: string;
+  startDate: string;
+  endDate: string;
 }
 
 export interface Member {

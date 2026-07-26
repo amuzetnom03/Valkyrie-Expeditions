@@ -1,5 +1,11 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  Firestore, 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager 
+} from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -29,7 +35,12 @@ export const getFirebaseApp = () => {
 export const getDb = () => {
   const firebaseApp = getFirebaseApp();
   if (!db && firebaseApp) {
-    db = getFirestore(firebaseApp);
+    // Enable offline persistence with persistentLocalCache
+    db = initializeFirestore(firebaseApp, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    });
   }
   return db;
 };
