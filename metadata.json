@@ -1,6 +1,6 @@
 {
   "name": "Vanguard Expedition Command",
-  "description": "Integrated live tracking, real-time meteorological analysis, and strategic logistics for high-altitude Himalayan expeditions.",
+  "description": "Integrated live tracking, real-time meteorological analysis, and strategic logistics for high-altitude Himalayan expeditions. (Restored)",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

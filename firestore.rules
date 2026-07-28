@@ -11,22 +11,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     function incoming() {
       return request.resource.data;
     }
 
-    function existing() {
-      return resource.data;
-    }
-
     // 3. Entity Validations
     function isValidExpedition(data) {
-      return data.keys().hasAll(['id', 'name', 'status', 'lat', 'lng']) &&
-             data.keys().size() == 5 &&
+      let requiredFields = ['id', 'name', 'status', 'lat', 'lng'];
+      return data.keys().hasAll(requiredFields) &&
              data.id is string &&
              data.name is string &&
              data.status in ['active', 'planned', 'completed'] &&
@@ -35,7 +31,8 @@ service cloud.firestore {
     }
 
     function isValidMember(data) {
-      return data.keys().hasAll(['id', 'name', 'lat', 'lng', 'alt', 'status']) &&
+      let requiredFields = ['id', 'name', 'lat', 'lng', 'alt', 'status'];
+      return data.keys().hasAll(requiredFields) &&
              data.id is string &&
              data.name is string &&
              data.lat is number &&
@@ -44,19 +41,35 @@ service cloud.firestore {
              data.status in ['active', 'resting', 'stationary', 'emergency'];
     }
 
+    function isValidAlert(data) {
+      let requiredFields = ['id', 'userId', 'lat', 'lng', 'type', 'timestamp'];
+      return data.keys().hasAll(requiredFields) &&
+             data.id is string &&
+             data.userId == request.auth.uid &&
+             data.lat is number &&
+             data.lng is number &&
+             data.type in ['HELI_EVAC', 'MEDICAL', 'LOGISTICS'] &&
+             data.timestamp is timestamp;
+    }
+
     // 4. Collection Matchers
     match /expeditions/{expeditionId} {
       allow read: if true; // Public view for expeditions
-      allow write: if isSignedIn(); // Only authenticated users can manage expeditions
+      allow create, update: if isSignedIn() && isValidExpedition(incoming());
+      allow delete: if false; // Prevention of accidental deletion
 
       match /members/{memberId} {
         allow read: if true; // Public view for live tracking
-        allow write: if isSignedIn(); // Only authenticated members/base camp can update telemetry
+        // Only the member themselves can update their telemetry
+        allow write: if isOwner(memberId) && isValidMember(incoming());
       }
 
       match /alerts/{alertId} {
         allow read: if true;
-        allow write: if isSignedIn();
+        // Any signed in user can create an alert for an expedition they are part of
+        // We validate that the userId in the alert matches the auth.uid
+        allow create: if isSignedIn() && isValidAlert(incoming());
+        allow update, delete: if false; // Alerts are permanent records
       }
     }
   }

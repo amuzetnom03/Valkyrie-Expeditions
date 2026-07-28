@@ -22,9 +22,17 @@ import LogisticsBoard from '@/components/LogisticsBoard';
 import MissionForm from '@/components/MissionForm';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { Expedition, MissionStatus, TravelerInfo } from '@/types/expedition';
-import { getDb } from '@/lib/firebase';
-import { doc, setDoc, Timestamp, collection, getDocs } from 'firebase/firestore';
+import { getDb, getAuthClient } from '@/lib/firebase';
+import { 
+  doc, 
+  setDoc, 
+  Timestamp, 
+  collection, 
+  getDocs, 
+  onSnapshot 
+} from 'firebase/firestore';
 import { getAccessToken } from '@/lib/google-auth';
+import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
 
 const EXPEDITIONS: Expedition[] = [
   {
@@ -200,8 +208,7 @@ export default function ExpeditionDashboard() {
         status: 'active',
         updatedAt: Timestamp.now()
       }, { merge: true }).catch(err => {
-        console.error('Persistence failed:', err);
-        setError('Connection lost. Changes saved locally.');
+        handleFirestoreError(err, OperationType.WRITE, `expeditions/${selectedId}/members/${user.uid}`);
       });
 
       // Google Calendar sync (background)
@@ -250,7 +257,7 @@ export default function ExpeditionDashboard() {
           return [...others, ...current];
         });
       }, (err) => {
-        console.error(`Logistics sync error for ${exp.id}:`, err);
+        handleFirestoreError(err, OperationType.GET, `expeditions/${exp.id}/members`);
       });
       unsubscribers.push(unsub);
     });

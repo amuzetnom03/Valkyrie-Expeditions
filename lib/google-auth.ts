@@ -1,17 +1,12 @@
 import { 
-  getAuth, 
   signInWithPopup, 
   GoogleAuthProvider, 
   onAuthStateChanged,
   User,
   UserCredential
 } from 'firebase/auth';
-import { getApp, getApps, initializeApp } from 'firebase/app';
-import firebaseConfig from '../firebase-applet-config.json';
+import { getAuthClient } from './firebase';
 
-// Initialize Firebase if not already initialized
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
 // Scopes for Google Calendar
@@ -21,6 +16,9 @@ provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
 let accessToken: string | null = null;
 
 export const googleSignIn = async (): Promise<UserCredential | null> => {
+  const auth = getAuthClient();
+  if (!auth) return null;
+
   try {
     const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -35,6 +33,9 @@ export const googleSignIn = async (): Promise<UserCredential | null> => {
 export const getAccessToken = () => accessToken;
 
 export const initAuth = (onUser: (user: User | null) => void, onNeedsAuth: () => void) => {
+  const auth = getAuthClient();
+  if (!auth) return () => {};
+
   return onAuthStateChanged(auth, (user) => {
     if (user) {
       onUser(user);

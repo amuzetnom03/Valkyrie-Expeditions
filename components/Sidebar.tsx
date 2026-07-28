@@ -1,4 +1,4 @@
-import { ActivityIcon } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Expedition } from '@/types/expedition';
 
@@ -15,7 +15,7 @@ export default function Sidebar({ expeditions, selectedId, onSelect }: SidebarPr
       <div className="md:hidden flex flex-col w-full bg-[#0a0a0b] border-b border-slate-800 z-30">
         <div className="flex items-center justify-between p-4 border-b border-slate-800/50">
           <div className="flex items-center gap-2 text-orange-500">
-            <ActivityIcon size={20} className="animate-pulse" />
+            <Activity size={20} className="animate-pulse" />
             <span className="font-mono text-[10px] tracking-widest uppercase font-bold">Vanguard</span>
           </div>
           <div className="flex items-center gap-2">
@@ -47,7 +47,7 @@ export default function Sidebar({ expeditions, selectedId, onSelect }: SidebarPr
       >
         <div className="p-6 lg:p-8 border-b border-slate-800 flex flex-col items-center lg:items-start">
           <div className="flex items-center gap-3 text-orange-500 mb-2">
-            <ActivityIcon size={24} className="animate-pulse flex-shrink-0" />
+            <Activity size={24} className="animate-pulse flex-shrink-0" />
             <span className="font-mono text-[10px] tracking-widest uppercase font-bold hidden lg:block">Vanguard Command</span>
           </div>
           <h2 className="text-xl font-black tracking-tighter uppercase text-slate-100 hidden lg:block">EXPEDITIONS</h2>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getDb, getAuthClient } from '@/lib/firebase';
 import { doc, setDoc, Timestamp, collection } from 'firebase/firestore';
 import { onAuthStateChanged, signInAnonymously, User } from 'firebase/auth';
+import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
 
 export function useGeolocation(expeditionId: string, isTracking: boolean) {
   const [user, setUser] = useState<User | null>(null);
@@ -54,7 +55,7 @@ export function useGeolocation(expeditionId: string, isTracking: boolean) {
               isUser: true
             }, { merge: true });
           } catch (err) {
-            console.error('Error updating location:', err);
+            handleFirestoreError(err, OperationType.WRITE, `expeditions/${expeditionId}/members/${user.uid}`);
             setError('Failed to update location in database');
           }
         },
@@ -100,7 +101,8 @@ export function useGeolocation(expeditionId: string, isTracking: boolean) {
       const { latitude, longitude, altitude } = position.coords;
       
       try {
-        const alertRef = doc(collection(db, 'expeditions', expeditionId, 'alerts'));
+        const alertPath = `expeditions/${expeditionId}/alerts`;
+        const alertRef = doc(collection(db, alertPath));
         await setDoc(alertRef, {
           id: alertRef.id,
           userId: user.uid,
@@ -113,14 +115,15 @@ export function useGeolocation(expeditionId: string, isTracking: boolean) {
         });
 
         // Update member status to emergency
-        const memberRef = doc(db, 'expeditions', expeditionId, 'members', user.uid);
+        const memberPath = `expeditions/${expeditionId}/members/${user.uid}`;
+        const memberRef = doc(db, memberPath);
         await setDoc(memberRef, { 
           status: 'emergency',
           updatedAt: Timestamp.now()
         }, { merge: true });
 
       } catch (err) {
-        console.error('Failed to trigger emergency:', err);
+        handleFirestoreError(err, OperationType.WRITE, `expeditions/${expeditionId}/alerts or members`);
         setError('CRITICAL: Emergency signal failed to broadcast');
       }
     });
